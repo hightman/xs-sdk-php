@@ -24,6 +24,8 @@ class EXunSearch extends CApplicationComponent
 
 	public function __call($name, $parameters)
 	{
+		if($this->_xs === null)
+        		$this->_init();
 		// check methods of xs
 		if ($this->_xs !== null && method_exists($this->_xs, $name)) {
 			return call_user_func_array(array($this->_xs, $name), $parameters);
