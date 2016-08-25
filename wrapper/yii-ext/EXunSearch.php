@@ -15,15 +15,17 @@
  *
  * @author hightman
  * @version $Id$
- * @since 1.0
+ * @since 1.0.1
  */
 class EXunSearch extends CApplicationComponent
 {
-	public $xsRoot, $project, $charset;
+	public $xsRoot, $project, $charset, $iniRoot;
 	private $_xs, $_scws;
 
 	public function __call($name, $parameters)
 	{
+		if($this->_xs === null)
+        		$this->_init();
 		// check methods of xs
 		if ($this->_xs !== null && method_exists($this->_xs, $name)) {
 			return call_user_func_array(array($this->_xs, $name), $parameters);
@@ -49,6 +51,13 @@ class EXunSearch extends CApplicationComponent
 
 	public function init()
 	{
+	}
+	
+	public function _init($project = '')
+	{
+		if(!empty($project))
+            		$this->project = $project;
+            		
 		if ($this->xsRoot === null) {
 			$lib = dirname(__FILE__) . '/../../lib/XS.class.php';
 		} else {
@@ -60,14 +69,40 @@ class EXunSearch extends CApplicationComponent
 		if (!file_exists($lib)) {
 			throw new CException('"XS.php" or "XS.class.php" not found, please check value of ' . __CLASS__ . '::$xsRoot');
 		}
-		if (($path = Yii::getPathOfAlias($this->project)) !== false) {
-			$this->project = $path . '.ini';
-		}
+		if($this->iniRoot !== null)
+            		$project = $this->iniRoot.'.'.$project;
+        	$ini = Yii::getPathOfAlias($project).'.ini';
+	        if (!file_exists($ini)) {
+	            	throw new CException($project.' not found, please check '.$ini);
+	        }
 		require_once $lib;
-		$this->_xs = new XS($this->project);
+		$this->_xs = new XS($ini);
 		$this->_xs->setDefaultCharset($this->charset);
 	}
-
+	
+	public function __get($projectName)
+	{
+	        if($this->_xs === null) {
+	            	$this->_init($projectName);
+	            	return $this;
+	        }
+	        if ($this->_xs !== null && property_exists($this->_xs, $projectName)) {
+	            	return $this->_xs->{$projectName};
+	        }
+	        // check propertys of index object
+	        if ($this->_xs !== null && property_exists('XSIndex', $projectName)) {
+	        	if($this->_xs->index === null)
+	        		$this->_xs->index = new XSIndex();
+	            	return $this->_xs->index->{$projectName};
+	        }
+	        // check propertys of search object
+	        if ($this->_xs !== null && property_exists('XSSearch', $projectName)) {
+	        	if($this->_xs->search === null)
+	        		$this->_xs->search = new XSSearch();
+	            	return $this->_xs->search->{$projectName};
+	        }
+	        return $this;
+	}
 	/**
 	 * Quickly add a new document (without checking key conflicts)
 	 * @param mixed $data XSDocument object or data array to be added
