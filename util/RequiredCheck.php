@@ -134,6 +134,9 @@ function check_conv()
 function check_cache()
 {
 	$rec = array();
+	if (function_exists('apcu_fetch')) {
+		$rec[] = 'apcu';
+	}
 	if (function_exists('apc_fetch')) {
 		$rec[] = 'apc';
 	}
